@@ -10,6 +10,7 @@ class Block {
     constructor(data, prevHash) {
         this.prevHash = prevHash;
         this.data = data;
+        this.nonce = 1;
         this.hash = this.computeHash();
     }
 
@@ -18,13 +19,27 @@ class Block {
     }
 
     computeHash() {
-        return sha256(this.prevHash + this.data).toString();
+        return sha256(this.prevHash + this.data + this.nonce).toString();
+    }
+
+    mine(difficulty){
+        while(true){
+            this.updateHash();
+            if(this.hash.substring(0, difficulty) !== String('0'.repeat(difficulty))){
+                this.nonce++;
+                this.updateHash();
+                continue;
+            }
+            console.log('Block mined: ' + this.hash, 'Nonce: ' + this.nonce);
+            break;
+        }
     }
 }
 
 class Chain {
-    constructor(){
+    constructor(difficulty){
         this.chain = [this.init()];
+        this.difficulty = difficulty;
     }
 
     init(){
@@ -38,7 +53,7 @@ class Chain {
 
     addBlock(block){
         block.prevHash = this.getLatestBlock().hash;
-        block.updateHash();
+        block.mine(this.difficulty);
         this.chain.push(block);
         if (!this.validateChain()) {
             this.chain.pop();
@@ -72,10 +87,12 @@ class Chain {
     }
 }
 
-const chain = new Chain();
+const chain = new Chain(5);
 chain.addBlock(new Block('This is the second block', ''));
 chain.addBlock(new Block('This is the third block', ''));
 console.log(chain);
-chain.chain[1].data = 'This is the second block, modified';
-chain.chain[1].updateHash();
+
+// modifying
+chain.chain[1].data = 'This is the second block modified';
+chain.chain[1].mine(5);
 chain.validateChain();
